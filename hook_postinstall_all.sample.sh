@@ -260,6 +260,7 @@ if [[ "${PAC}" == 1 && "${WITHOUTPACAUR}" != "1" ]]; then
 	# download and compile cower
 
 	git clone https://aur.archlinux.org/cower.git --depth=1 && cd cower
+	gpg --recv-keys --keyserver hkp://pgp.mit.edu 1EB2638FF56C0C53
 	makepkg -si --noconfirm
 	cd .. && rm -rf cower
 
