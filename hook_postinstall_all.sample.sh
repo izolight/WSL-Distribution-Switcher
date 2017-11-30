@@ -29,7 +29,7 @@ log "Detecting operating system..."
 DEB=$(test -f /usr/bin/dpkg && /usr/bin/dpkg --search /usr/bin/dpkg >> /dev/null 2>&1; test "$?" != "0"; echo "$?")
 RPM=$(test -f /usr/bin/rpm && /usr/bin/rpm -q -f /usr/bin/rpm >> /dev/null 2>&1; test "$?" != "0"; echo "$?")
 PAC=$(test -f /usr/bin/pacman && /usr/bin/pacman -Qo /usr/bin/pacman >> /dev/null 2>&1; test "$?" != "0"; echo "$?")
-	
+
 # cntlm proxy
 export http_proxy=http://127.0.0.1:9091
 export https_proxy=http://127.0.0.1:9091
@@ -207,7 +207,9 @@ if [[ "${PAC}" == 1 ]]; then
 
 	# install original fakeroot and dependencies for makepkg
 
-	${mgrinst} base-devel git po4a git
+	rm /usr/bin/fakeroot
+
+	${mgrinst} base-devel git po4a git sharutils
 
 	# overwrite standard fakeroot with a temporary pass-through script
 	# since we are root at this point, the bypass script has no side-effect
@@ -219,13 +221,16 @@ if [[ "${PAC}" == 1 ]]; then
 	# download and patch the fakeroot package from ABS
 
 	pushd $(mktemp -d)
-	git clone git://git.archlinux.org/svntogit/packages.git --depth=1 --branch=packages/fakeroot && cd packages/trunk
+	git config --global http.sslVerify false
+	git clone https://git.archlinux.org/svntogit/packages.git --depth=1 --branch=packages/fakeroot && cd packages/trunk
 	sed -i 's/--with-ipc=sysv$/--with-ipc=tcp/' PKGBUILD
 
 	# patch mkpkg to run as root temporarily and build package
 
 	sed -i 's/EUID\s*==\s*0/EUID == 99999/' /usr/bin/makepkg
+	PATH=$PATH:/usr/bin/vendor_perl/
 	makepkg -si --noconfirm
+	${mgr} -U fakeroot-*-x86_64.pkg.tar.xz
 	sed -i 's/EUID\s*==\s*99999/EUID == 0/' /usr/bin/makepkg
 
 	# update pacman config to ignore fakeroot updates, as those use --with-ipc=sysv
@@ -253,8 +258,6 @@ if [[ "${PAC}" == 1 && "${WITHOUTPACAUR}" != "1" ]]; then
 	sed -i 's/EUID\s*==\s*0/EUID == 99999/' /usr/bin/makepkg
 
 	# download and compile cower
-
-	git config --global http.sslVerify false
 
 	git clone https://aur.archlinux.org/cower.git --depth=1 && cd cower
 	makepkg -si --noconfirm
