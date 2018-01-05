@@ -157,7 +157,7 @@ def parse_image_arg(argv, can_be_file = False):
 			if idx != -1:
 				break
 
-		label = argvl[:idx]
+		label = os.path.basename(argvl[:idx])
 
 		if label.startswith('rootfs_'):
 			label = label[len('rootfs_'):]
@@ -194,7 +194,7 @@ def probe_wsl(silent = False):
 		print('%s[!]%s The Linux subsystem is not installed. Please go through the standard installation procedure first.' % (Fore.RED, Fore.RESET))
 		sys.exit(-1)
 
-	if os.path.exists(os.path.join(basedir, 'temp')):
+	if os.path.exists(os.path.join(basedir, 'temp')) and os.listdir(os.path.join(basedir, 'temp')):
 		if silent:
 			return None, None
 
